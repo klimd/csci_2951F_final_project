@@ -26,12 +26,15 @@ class KLearning:
         """Calculates the risk-seeking/termperature parameter from O'Donoghue"""
         return (self.sigma ** 2 * beta_l)/(2 * self.visitation_count[s, a])
 
-    def update_k_table(self, beta_l, state, action, reward, next_state):
+    def update_k_table(self, beta_l, state, action, reward, next_state, terminal):
         k_current = self.k_table[state, action]
         k_next = self.k_table[next_state]
         v_next = np.log(np.sum(np.exp(k_next * self.beta))) / self.beta
         tau = self.calculate_tau(beta_l, state, action)
-        k_target = reward + tau + self.gamma * v_next # TODO possibly change reward to mean reward
+        if terminal:
+            k_target = reward + tau
+        else:
+            k_target = reward + tau + self.gamma * v_next # TODO possibly change reward to mean reward
         self.k_table[state, action] += self.alpha * (k_target - k_current)
 
     def train(self, num_episodes, env):
@@ -43,7 +46,7 @@ class KLearning:
                 action = self.choose_action(state)
                 self.visitation_count[state, action] += 1 
                 next_state, reward, done, truncated, info = env.step(action)
-                self.update_k_table(beta_l, state, action, reward, next_state)
+                self.update_k_table(beta_l, state, action, reward, next_state, done)
                 state = next_state
 
     def evaluate(self, env, num_episodes):
@@ -64,7 +67,7 @@ class KLearning:
 if __name__ == '__main__':
     env = gym.make('FrozenLake-v1')
 
-    # Some Hyperparameters
+    # Hyperparameters
     num_states = env.observation_space.n
     num_actions = env.action_space.n
     alpha = 0.1
