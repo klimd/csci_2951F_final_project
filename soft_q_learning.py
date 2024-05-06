@@ -52,7 +52,7 @@ class SoftQLearning:
         return np.mean(total_rewards)
     
 # if __name__ == '__main__':
-def soft_q_learning(env):
+def soft_q_learning(env, beta=100):
     # env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
@@ -60,7 +60,7 @@ def soft_q_learning(env):
     num_actions = env.action_space.n
     alpha = 0.1
     gamma = 0.99
-    beta = 100
+    beta = beta
 
     # Training Agent
     agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
@@ -76,7 +76,7 @@ def soft_q_learning(env):
     while not done:
         action = np.argmax(agent.q_table[state])
         next_state, reward, done, truncated, info = env.step(action)
-        print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
+        # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
         state = next_state
 
     return agent

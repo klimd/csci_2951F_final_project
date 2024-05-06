@@ -48,7 +48,6 @@ def make_figure_3(max_beta=200, step=0.95, trajectory_length=10_000, eig_max_it=
         _, u, v, _, _, _ = solution
 
         dist = np.multiply(u, v.T)
-        print(dist.shape)
         row = dict(
             beta=beta,
             solution=solution,
@@ -65,17 +64,17 @@ def make_figure_3(max_beta=200, step=0.95, trajectory_length=10_000, eig_max_it=
         dist = np.array(dist).reshape(nS, nA).sum(axis=1)
         dist_list.append(dist)
         title_list.append(rf"$\beta$ = {beta:.2f}")
+
     plot_dist(env.desc, *dist_list, titles=title_list)
 
 def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_000, eig_max_it=10_000_000, tolerance=1e-6):
 
-    agent = soft_q_learning(env)
-    print(agent)
     data = []
-    beta = max_beta / step
-    while beta >= 1.:
-        beta *= step
-        print(f"beta={beta: 10.4f}", end=', ', flush=True)
+    # for beta in [2, 20, 40, 200]:
+    for beta in [200, 150, 100, 50]:
+        print(f"beta={beta}", end=', ', flush=True)
+
+        agent = soft_q_learning(env, beta=beta)
 
         dist = agent.q_table
         row = dict(
@@ -84,14 +83,15 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
         )
         data.append(row)
 
-    dst_every = len(data) // 4
-    dst_params = [(r['beta'], r['distribution']) for i, r in enumerate(data) if i % dst_every == 0]
+    dst_params = [(r['beta'], r['distribution']) for i, r in enumerate(data)]
 
     title_list = []
     dist_list = []
-    for beta, dist in reversed(dst_params[:-1]):
+    for beta, dist in reversed(dst_params):
+        dist = np.array(dist).reshape(agent.num_states, agent.num_actions).sum(axis=1)
         dist_list.append(dist)
         title_list.append(rf"$\beta$ = {beta:.2f}")
+
     plot_dist(env.desc, *dist_list, titles=title_list)
 
 if __name__ == '__main__':
@@ -110,8 +110,8 @@ if __name__ == '__main__':
     # desc = ["SFF", "FFF", "HFG"]    #test-1
     env = gym.make('FrozenLake-v1', desc=desc, is_slippery=True)
 
-    # make_figure_3(max_beta = 100, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
-    soft_q_learning_figure_3(env=env, max_beta = 100, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
+    # make_figure_3(max_beta = 2, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
+    soft_q_learning_figure_3(env=env, max_beta = 200, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
 
 
 

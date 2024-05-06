@@ -35,6 +35,7 @@ def plot_dist(desc, *paths_list, ncols=4, filename=None, titles=None, main_title
         if type(paths) == dict:
             data = paths['data']
             set_kvargs = paths['set']
+            # print("data = ", paths['data'], " set_kvargs =", paths['set'])
             axi.plot(*data)
             axi.set_title(title)
             axi.set(**set_kvargs)
@@ -83,7 +84,6 @@ def draw_paths(desc, axi, paths, title=None, show_values=False, symbols_in_color
     if len(paths.shape) == 2 and paths.shape[0] == nsta:
         # looks like a policy, lets try to illustrate it with arrows
         # axi.scatter(*np.argwhere(desc.T == b'F').T, color='#FFFFFF', s=10)
-
         nact = paths.shape[1]
 
         if nact in [2, 3]:
