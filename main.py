@@ -82,7 +82,7 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
 
         agent = soft_q_learning(env, beta=beta)
 
-        dist = agent.state_action_distribution
+        dist = agent.state_distribution
         row = dict(
             beta=beta,
             distribution=dist,
@@ -94,7 +94,6 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
     title_list = []
     dist_list = []
     for beta, dist in reversed(dst_params):
-        dist = np.array(dist).reshape(agent.num_states, agent.num_actions).sum(axis=1)
         print(dist)
         dist_list.append(dist)
         title_list.append(rf"$\beta$ = {beta:.2f}")
