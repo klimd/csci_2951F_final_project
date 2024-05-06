@@ -297,7 +297,8 @@ def solve_dp(beta, max_steps, gamma):
 def make_figure_5(beta=10, max_steps=300):
     N = max_steps
 
-    env = ModifiedFrozenLake(map_name='10x10empty', min_reward=-2.)
+    # env = ModifiedFrozenLake(map_name='10x10empty', min_reward=-2.)
+    env = ModifiedFrozenLake(map_name='9x9zigzag', min_reward=-2.)
     env = TimeLimit(env, N)
 
     dynamics, rewards = get_dynamics_and_rewards(env)
@@ -327,6 +328,8 @@ def make_figure_5(beta=10, max_steps=300):
     # here we create a q_table from eigenvalue and left-eigenvector, for each trajectory length
     # this is to compare directly with the ground truth q_table from DP
     ld_q_table_t = (np.log(l) * t + np.log(u)) / beta
+    print(ld_q_table_t)
+    print(ld_q_table_t.shape)
     ld_q_table_t[1:] /= t[1:]
 
     fig = plot_dist(env.desc, env.desc, None, None, None, show_plot=False, ncols=2)
@@ -610,32 +613,32 @@ def make_figure_8(beta=10, n_replicas=3, n_episodes=2_000):
 
 
 if __name__ == '__main__':
-    print('\nMaking figure 2 ... ')
-    make_figure_2()
-
-    print('\nMaking figure 3 ... ')
-    make_figure_3(max_beta=100, step=0.80, trajectory_length=5_000, eig_max_it=1_000_000, tolerance=5e-4)
+    # print('\nMaking figure 2 ... ')
+    # make_figure_2()
+    #
+    # print('\nMaking figure 3 ... ')
+    # make_figure_3(max_beta=100, step=0.80, trajectory_length=5_000, eig_max_it=1_000_000, tolerance=5e-4)
 
     print('\nMaking figure 5 ... ')
     make_figure_5(beta=10, max_steps=300)
-
-    print('\nMaking figure 6 ... ')
-    make_figure_6(beta=20)
-
-    print('\nMaking figure 7 (faster version). This should take about 2 minutes ... ')
-    make_figure_7(beta_list=[5, 10], alpha=0.02, episode_length=1_000, n_episodes=1_000, n_epochs=2)
-
-    # print('\nMaking figure 7 (fast version). This should take about 5 minutes ... ')
-    # make_figure_7(beta_list = [5, 10, 50], alpha = 0.01, episode_length = 1_000, n_episodes = 1_000, n_epochs=6)
-
-    # print('\nMaking figure 7. This should take about 10 minutes ... ')
-    # make_figure_7(beta_list = [1, 5, 10, 50, 100], alpha = 0.01, episode_length = 1_000, n_episodes = 2_000, n_epochs = 5)
-
-    print('\nMaking figure 8 (faster version). This should take about 1 minute ... ')
-    make_figure_8(beta=10, n_replicas=2, n_episodes=1_000)
-
-    # print('\nMaking figure 8 (fast version). This should take about 10 minutes ... ')
-    # make_figure_8(beta = 10, n_replicas = 2, n_episodes = 10_000)
-
-    # print('\nMaking figure 8. This should take about 100 minutes ... ')
-    # make_figure_8(beta = 10, n_replicas = 2, n_episodes = 100_000)
+    #
+    # print('\nMaking figure 6 ... ')
+    # make_figure_6(beta=20)
+    #
+    # print('\nMaking figure 7 (faster version). This should take about 2 minutes ... ')
+    # make_figure_7(beta_list=[5, 10], alpha=0.02, episode_length=1_000, n_episodes=1_000, n_epochs=2)
+    #
+    # # print('\nMaking figure 7 (fast version). This should take about 5 minutes ... ')
+    # # make_figure_7(beta_list = [5, 10, 50], alpha = 0.01, episode_length = 1_000, n_episodes = 1_000, n_epochs=6)
+    #
+    # # print('\nMaking figure 7. This should take about 10 minutes ... ')
+    # # make_figure_7(beta_list = [1, 5, 10, 50, 100], alpha = 0.01, episode_length = 1_000, n_episodes = 2_000, n_epochs = 5)
+    #
+    # print('\nMaking figure 8 (faster version). This should take about 1 minute ... ')
+    # make_figure_8(beta=10, n_replicas=2, n_episodes=1_000)
+    #
+    # # print('\nMaking figure 8 (fast version). This should take about 10 minutes ... ')
+    # # make_figure_8(beta = 10, n_replicas = 2, n_episodes = 10_000)
+    #
+    # # print('\nMaking figure 8. This should take about 100 minutes ... ')
+    # # make_figure_8(beta = 10, n_replicas = 2, n_episodes = 100_000)

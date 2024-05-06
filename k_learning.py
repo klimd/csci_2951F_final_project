@@ -60,21 +60,21 @@ class KLearning:
             total_rewards.append(episode_reward)
         return np.mean(total_rewards)
 
-
-if __name__ == '__main__':
-    env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
+def k_learning(env, beta=100):
+    # if __name__ == '__main__':
+#     env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
     num_states = env.observation_space.n
     num_actions = env.action_space.n
     alpha = 0.1
     gamma = 0.99
-    beta = 0.1
+    beta = beta
     sigma = 10
 
     # Training Agent
     agent = KLearning(num_states, num_actions, alpha, gamma, beta, sigma)
-    num_episodes = 10000
+    num_episodes = 100
     agent.train(num_episodes, env)
 
     # Evaluation
@@ -86,5 +86,7 @@ if __name__ == '__main__':
     while not done:
         action = np.argmax(agent.k_table[state])
         next_state, reward, done, truncated, info = env.step(action)
-        print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
+        # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
         state = next_state
+
+    return agent
