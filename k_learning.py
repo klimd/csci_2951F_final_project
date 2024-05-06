@@ -65,7 +65,7 @@ class KLearning:
 
 
 if __name__ == '__main__':
-    env = gym.make('FrozenLake-v1')
+    env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Hyperparameters
     num_states = env.observation_space.n
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     beta = 0.1
-    sigma = 1
+    sigma = 10
 
     # Training Agent
     agent = KLearning(num_states, num_actions, alpha, gamma, beta, sigma)
