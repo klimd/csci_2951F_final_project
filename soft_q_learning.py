@@ -9,6 +9,8 @@ class SoftQLearning:
         self.gamma = gamma
         self.beta = beta
         self.q_table = np.zeros((num_states, num_actions))
+        self.q_table_at_each_t = np.zeros((1000000, num_states, num_actions))
+        self.t_final = 0
 
     def softmax(self, q_values):
         exp_values = np.exp(q_values / self.beta)
@@ -20,22 +22,26 @@ class SoftQLearning:
         action = np.random.choice(self.num_actions, p=action_probs)
         return action
 
-    def update_q_table(self, state, action, reward, next_state):
+    def update_q_table(self, state, action, reward, next_state, t):
         q_current = self.q_table[state, action]
         q_next = self.q_table[next_state]
         v_next = np.log(np.sum(np.exp(q_next * self.beta))) / self.beta
         q_target = reward + self.gamma * v_next # TODO possibly change reward to mean reward
         self.q_table[state, action] += self.alpha * (q_target - q_current)
+        self.q_table_at_each_t[t] = self.q_table[state, action]
 
     def train(self, num_episodes, env):
+        t = 0
         for episode in range(num_episodes):
             state, info = env.reset()
             done = False
             while not done:
                 action = self.choose_action(state)
                 next_state, reward, done, truncated, info = env.step(action)
-                self.update_q_table(state, action, reward, next_state)
+                self.update_q_table(state, action, reward, next_state, t)
                 state = next_state
+                t+=1
+        self.t_final = t
 
     def evaluate(self, env, num_episodes):
         total_rewards = []
@@ -52,9 +58,8 @@ class SoftQLearning:
                 state = next_state
                 state_distribution[state] += 1
             total_rewards.append(episode_reward)
-        print(state_distribution)
+        # print(state_distribution)
         self.state_distribution = state_distribution
-        print(self.state_action_distribution)
         return np.mean(total_rewards)
     
 # if __name__ == '__main__':
@@ -77,12 +82,12 @@ def soft_q_learning(env, beta=100):
     num_eval_episodes = 100
     avg_reward = agent.evaluate(env, num_eval_episodes)
     print(f"Average reward over {num_eval_episodes} episodes: {avg_reward:.2f}")
-    state, info = env.reset()
-    done = False
-    while not done:
-        action = np.argmax(agent.q_table[state])
-        next_state, reward, done, truncated, info = env.step(action)
-        # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
-        state = next_state
+    # state, info = env.reset()
+    # done = False
+    # while not done:
+    #     action = np.argmax(agent.q_table[state])
+    #     next_state, reward, done, truncated, info = env.step(action)
+    #     # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
+    #     state = next_state
 
     return agent
