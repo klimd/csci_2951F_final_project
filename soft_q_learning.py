@@ -51,8 +51,9 @@ class SoftQLearning:
             total_rewards.append(episode_reward)
         return np.mean(total_rewards)
     
-if __name__ == '__main__':
-    env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
+# if __name__ == '__main__':
+def soft_q_learning(env):
+    # env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
     num_states = env.observation_space.n
@@ -63,7 +64,7 @@ if __name__ == '__main__':
 
     # Training Agent
     agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
-    num_episodes = 10000
+    num_episodes = 100
     agent.train(num_episodes, env)
 
     # Evaluation
@@ -77,3 +78,5 @@ if __name__ == '__main__':
         next_state, reward, done, truncated, info = env.step(action)
         print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
         state = next_state
+
+    return agent

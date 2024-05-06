@@ -3,8 +3,7 @@ import gym
 from physics_experiments.utils import get_dynamics_and_rewards, solve_unconstrained_v1
 from physics_experiments.frozen_lake_env import ModifiedFrozenLake
 from physics_experiments.visualization import plot_dist
-from soft_q_learning import SoftQLearning
-
+from soft_q_learning import soft_q_learning
 MAPS = {
     "2x9ridge": [
         "FFFFFFFFF",
@@ -68,43 +67,17 @@ def make_figure_3(max_beta=200, step=0.95, trajectory_length=10_000, eig_max_it=
         title_list.append(rf"$\beta$ = {beta:.2f}")
     plot_dist(env.desc, *dist_list, titles=title_list)
 
-def soft_q_learning(env):
-    # Some Hyperparameters
-    num_states = env.observation_space.n
-    num_actions = env.action_space.n
-    alpha = 0.1
-    gamma = 0.99
-    beta = 100
-
-    # Training Agent
-    agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
-    print(agent.q_table.shape)
-    num_episodes = 100
-    agent.train(num_episodes, env)
-
-    # Evaluation
-    num_eval_episodes = 100
-    avg_reward = agent.evaluate(env, num_eval_episodes)
-    print(f"Average reward over {num_eval_episodes} episodes: {avg_reward:.2f}")
-    state, info = env.reset()
-    done = False
-    while not done:
-        action = np.argmax(agent.q_table[state])
-        next_state, reward, done, truncated, info = env.step(action)
-        # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
-        state = next_state
-
-    return agent.q_table
 def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_000, eig_max_it=10_000_000, tolerance=1e-6):
 
-    q_table = soft_q_learning(env)
+    agent = soft_q_learning(env)
+    print(agent)
     data = []
     beta = max_beta / step
     while beta >= 1.:
         beta *= step
         print(f"beta={beta: 10.4f}", end=', ', flush=True)
 
-        dist = q_table
+        dist = agent.q_table
         row = dict(
             beta=beta,
             distribution=dist,
@@ -123,7 +96,7 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
 
 if __name__ == '__main__':
 
-    desc = [
+    desc = [    # 9x9zigzag
         "FFFFFFFFF",
         "FSFFFFFFF",
         "WWWWWWFFF",
@@ -134,8 +107,10 @@ if __name__ == '__main__':
         "FFFFFFFGF",
         "FFFFFFFFF"
     ]
+    # desc = ["SFF", "FFF", "HFG"]    #test-1
     env = gym.make('FrozenLake-v1', desc=desc, is_slippery=True)
-    # make_figure_3(max_beta = 1, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
+
+    # make_figure_3(max_beta = 100, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
     soft_q_learning_figure_3(env=env, max_beta = 100, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
 
 

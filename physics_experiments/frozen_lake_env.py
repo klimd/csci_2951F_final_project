@@ -291,6 +291,11 @@ class ModifiedFrozenLake(DiscreteEnv):
 
 
 MAPS = {
+    "test-1": [
+        "SFF",
+        "FFF",
+        "HFG"
+    ],
     "2x9ridge": [
         "FFFFFFFFF",
         "FSFFFFFGF"
