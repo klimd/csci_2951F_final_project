@@ -9,6 +9,7 @@ class SoftQLearning:
         self.gamma = gamma
         self.beta = beta
         self.q_table = np.zeros((num_states, num_actions))
+        self.state_action_distribution = np.zeros((num_states, num_actions))
 
     def softmax(self, q_values):
         exp_values = np.exp(q_values / self.beta)
@@ -39,16 +40,21 @@ class SoftQLearning:
 
     def evaluate(self, env, num_episodes):
         total_rewards = []
+        state_action_distribution = np.zeros((self.num_states, self.num_actions))
         for episode in range(num_episodes):
             state, info = env.reset()
             done = False
             episode_reward = 0
             while not done:
-                action = np.argmax(self.q_table[state])
+                action = self.choose_action(state)
+                state_action_distribution[state, action] += 1
                 next_state, reward, done, truncated, info = env.step(action)
                 episode_reward += reward
                 state = next_state
             total_rewards.append(episode_reward)
+        print(state_action_distribution)
+        self.state_action_distribution = state_action_distribution / state_action_distribution.sum(axis=1, keepdims=True)
+        print(self.state_action_distribution)
         return np.mean(total_rewards)
     
 # if __name__ == '__main__':
