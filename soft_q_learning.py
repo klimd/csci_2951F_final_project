@@ -52,14 +52,14 @@ class SoftQLearning:
         return np.mean(total_rewards)
     
 if __name__ == '__main__':
-    env = gym.make('FrozenLake-v1')
+    env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
     num_states = env.observation_space.n
     num_actions = env.action_space.n
     alpha = 0.1
     gamma = 0.99
-    beta = 0.1
+    beta = 100
 
     # Training Agent
     agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
