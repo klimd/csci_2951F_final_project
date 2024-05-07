@@ -108,7 +108,9 @@ def k_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_000, 
 
     data = []
     # for beta in [2, 20, 40, 200]:
-    for beta in [0.5, 1, 1.5, 2]:
+    # for beta in [0.5, 1, 1.5, 2]:
+    # for beta in [0.5, 0.05, 0.025, 0.005 ]:
+    for beta in [50, 100, 200]:
         print(f"beta={beta}", end=', ', flush=True)
 
         agent = k_learning(env, beta=beta)
@@ -221,6 +223,7 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
     N = 1_000
 
     env = ModifiedFrozenLake(map_name='7x7holes')
+    # env = ModifiedFrozenLake(map_name='9x9zigzag')
     env = TimeLimit(env, N)
 
     dynamics, rewards = get_dynamics_and_rewards(env)
@@ -228,13 +231,14 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
     nA = nSnA // nS
     prior_policy = np.ones((nS, nA)) / nA
 
-    sigma = 1
+    sigma = 0.5
     def work(replica, rng):
         show_prg = replica == 1
         if show_prg:
             print("\nShowing progress for replica #1. The rest is running in parallel ...")
 
         env = ModifiedFrozenLake(map_name='7x7holes')
+        # env = ModifiedFrozenLake(map_name='9x9zigzag')
         env = TimeLimit(env, N)
         prior_policy = np.ones((nS, nA)) / nA
 
@@ -262,7 +266,7 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
 
         pbar = range(n_episodes)
         l = 1
-        visitation_count = np.matrix(np.zeros((env.nS, env.nA)))
+        visitation_count = np.matrix(np.ones((env.nS, env.nA)))
 
         if show_prg:
             print("Collecting experience ...")
@@ -319,6 +323,9 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
                     alpha = alpha * 0.55
                     l_alpha = l_alpha * 0.55
 
+                    # alpha = alpha * 0.25
+                    # l_alpha = l_alpha * 0.25
+
                 state, action = next_state, next_action
 
             l += 1
@@ -372,6 +379,160 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
     plt.tight_layout()
     plt.show()
 
+def make_figure_new():
+    n_replicas = 2
+    n_episodes = 1_00
+    betas = [50, 100, 150, 200]
+    sigmas = [0.25, 0.5, 0.75, 1]
+
+    N = 1_000
+
+    env = ModifiedFrozenLake(map_name='7x7holes')
+    # env = ModifiedFrozenLake(map_name='9x9zigzag')
+    env = TimeLimit(env, N)
+
+    dynamics, rewards = get_dynamics_and_rewards(env)
+    nS, nSnA = dynamics.shape
+    nA = nSnA // nS
+    prior_policy = np.ones((nS, nA)) / nA
+
+    for beta in betas:
+        for sigma in sigmas:
+            def work(replica, rng):
+                show_prg = replica == 1
+                if show_prg:
+                    print("\nShowing progress for replica #1. The rest is running in parallel ...")
+
+                env = ModifiedFrozenLake(map_name='7x7holes')
+                # env = ModifiedFrozenLake(map_name='9x9zigzag')
+                env = TimeLimit(env, N)
+                prior_policy = np.ones((nS, nA)) / nA
+
+                state_freq = np.zeros(env.nS) + np.finfo(float).eps
+
+                # initialize
+                l_value = np.exp(-beta)
+                u_table = np.matrix(np.ones((env.nS, env.nA)))
+                v_table = np.matrix(np.ones((env.nS, env.nA)))
+
+                save_period = N * n_episodes // 1000
+                rescale_period = save_period * 100
+
+                # simplistic choice for initial learning rate that scales with
+                init_alpha = np.log10(n_episodes) / n_episodes * 30
+                alpha = init_alpha
+                l_alpha = init_alpha / env.nS
+
+                theta_list = [-np.log(l_value) / beta]
+                step_list = [0]
+                alpha_list = [alpha]
+                l_alpha_list = [l_alpha]
+
+                steps_trained = 0
+
+                pbar = range(n_episodes)
+                l = 1
+                visitation_count = np.matrix(np.ones((env.nS, env.nA)))
+
+                if show_prg:
+                    print("Collecting experience ...")
+                    pbar = tqdm(pbar, ncols=120)
+                for _ in pbar:
+                    # keep SARSA structure
+                    state = env.reset()
+                    done = truncated = False
+                    action = rng.choice(env.nA, p=prior_policy[state])
+
+                    visitation_count_before_l = visitation_count
+
+                    while not (done or truncated):
+                        state_freq[state] += 1
+                        next_state, reward, done, truncated, _ = env.step(action)
+                        next_action = rng.choice(env.nA, p=prior_policy[next_state])
+                        # exp_re = np.exp(reward * beta)
+
+                        visitation_count[state, action] += 1
+                        exp_re = np.exp(beta * (reward + (sigma ** 2 * np.sqrt(l)) / (2 * visitation_count_before_l[state, action])))
+
+                        ##### the right eigenvector update #####
+                        v_valu = v_table[next_state, next_action]
+                        v_prev = v_table[state, action]
+                        bayes_rule = prior_policy[next_state, next_action] * state_freq[next_state] / (
+                                    prior_policy[state, action] * state_freq[state])
+                        v_valu = v_valu + alpha * (exp_re / l_value * v_prev * bayes_rule - v_valu)
+                        v_table[next_state, next_action] = v_valu
+
+                        ##### the left eigenvector update #####
+                        u_valu = u_table[state, action]
+                        u_next = u_table[next_state, next_action]
+                        u_valu = u_valu + alpha * (exp_re / l_value * u_next - u_valu)
+                        u_table[state, action] = u_valu
+
+                        ##### the eigenvalue update #####
+                        l_value = l_value + l_alpha * (exp_re * u_next / u_valu - l_value)
+                        l_value = min(l_value, 1)
+
+                        steps_trained += 1
+
+                        if steps_trained % (save_period) == 0:
+                            theta = -np.log(l_value) / beta
+                            theta_list.append(theta)
+
+                            step_list.append(steps_trained)
+                            alpha_list.append(alpha)
+                            l_alpha_list.append(l_alpha)
+
+                        if steps_trained % (rescale_period) == 0:
+                            v_table /= v_table.sum()
+                            u_table /= np.multiply(u_table, v_table).sum()
+
+                            alpha = alpha * 0.55
+                            l_alpha = l_alpha * 0.55
+
+                            # alpha = alpha * 0.25
+                            # l_alpha = l_alpha * 0.25
+
+                        state, action = next_state, next_action
+
+                    l += 1
+                return dict(
+                    step_list=step_list,
+                    theta_list=theta_list,
+                    alpha_list=alpha_list,
+                    l_alpha_list=l_alpha_list,
+                )
+
+            ncpu = cpu_count()
+            if n_replicas > ncpu:
+                print(f"Will use one replica for each available CPU. n_replicas is now = {ncpu}")
+                n_replicas = ncpu
+            rngs = [default_rng(s) for s in SeedSequence().spawn(n_replicas)]
+            data = Parallel(n_jobs=n_replicas)(delayed(work)(i + 1, rng) for i, rng in enumerate(rngs))
+
+        ax = plt.subplot2grid((1, 2), (0, 0))
+        gt_eigenvalue = solve_unconstrained_v1(beta, dynamics, rewards, prior_policy)[0]
+        gt_theta = -np.log(gt_eigenvalue) / beta
+        x, y = [], []
+        for d in data:
+            x.append(d['step_list'])
+            y.append(d['theta_list'])
+        x = np.array(x).mean(axis=0)
+        y = np.array(y)
+        e = np.abs(y - gt_theta)[:, -1].max()
+        y, dy = y.mean(axis=0), y.std(axis=0)
+        ax.plot(x, y)
+        ax.fill_between(x, y - dy, y + dy, alpha=0.4)
+        ax.hlines(gt_theta, x[0], x[-1], linestyles='dashed', color='black', label=r'Target $\\theta$')
+        ax.set_xlabel('Training step')
+        ax.set_ylim(gt_theta - e * 10, gt_theta + e * 10)
+        ax.set_ylabel("Learned $\\theta$ value\n(mean over replicas)")
+
+        print(f"True theta:  {gt_theta}")
+        print(f"Theta error: {e}  (max over {n_replicas} replicas)")
+        print(f"Theta relative error: {e / gt_theta * 100:.4f}%  (max over {n_replicas} replicas)")
+        plt.tight_layout()
+        plt.show()
+
 
 
 if __name__ == '__main__':
@@ -397,4 +558,7 @@ if __name__ == '__main__':
     # soft_q_learning_figure_5(beta=10, max_steps=300)
 
     # print('\nMaking figure 8 (faster version). This should take about 1 minute ... ')
-    make_figure_8_with_k_learning(beta=10, n_replicas=2, n_episodes=1_000)
+    make_figure_8_with_k_learning(beta=10, n_replicas=2, n_episodes=1_00)
+
+    # # print('\nMaking figure 8 (fast version). This should take about 10 minutes ... ')
+    # make_figure_8_with_k_learning(beta = 10, n_replicas = 2, n_episodes = 10_000)

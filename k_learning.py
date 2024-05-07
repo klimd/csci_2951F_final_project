@@ -77,11 +77,11 @@ def k_learning(env, beta=100):
     alpha = 0.1
     gamma = 0.99
     beta = beta
-    sigma = 10
+    sigma = 0.05
 
     # Training Agent
     agent = KLearning(num_states, num_actions, alpha, gamma, beta, sigma)
-    num_episodes = 1000
+    num_episodes = 100
     agent.train(num_episodes, env)
 
     # Evaluation
