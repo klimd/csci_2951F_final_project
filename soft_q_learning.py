@@ -41,9 +41,9 @@ class SoftQLearning:
             while not done and not truncated:
                 action = np.random.choice(self.num_actions, p=np.exp(self.q_table[state] / self.beta) / np.sum(np.exp(self.q_table[state] / self.beta)))
                 next_state, reward, done, truncated, info = env.step(action)
-                best_next_action = np.argmax(Q[next_state])
+                best_next_action = np.argmax(self.q_table[next_state])
                 td_target = reward + self.gamma * self.q_table[next_state][best_next_action]
-                td_error = td_target - Q[state][action]
+                td_error = td_target - self.q_table[state][action]
                 self.q_table[state][action] += self.alpha * td_error
                 state = next_state
                 self.q_table_at_each_t[episode] = self.q_table
