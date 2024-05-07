@@ -3,6 +3,8 @@ import gym
 from gym.wrappers import TimeLimit
 from physics_experiments.frozen_lake_env import ModifiedFrozenLake
 
+# This script allows us to get data on trajectory distributions and Q-tables for soft Q Learning
+
 def soft_q_learning(env, episodes, learning_rate, beta, discount_factor):
     nS = env.observation_space.n
     nA = env.action_space.n
