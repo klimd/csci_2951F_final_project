@@ -12,6 +12,7 @@ from physics_experiments.utils import get_dynamics_and_rewards, solve_unconstrai
 from physics_experiments.frozen_lake_env import ModifiedFrozenLake
 from physics_experiments.visualization import plot_dist
 from soft_q_learning import soft_q_learning
+from math import sqrt
 
 MAPS = {
     "2x9ridge": [
@@ -381,11 +382,16 @@ def make_figure_8_with_k_learning(beta=10, n_replicas=3, n_episodes=2_000):
 
 def make_figure_new():
     n_replicas = 2
-    n_episodes = 1_00
-    betas = [50, 100, 150, 200]
-    sigmas = [0.25, 0.5, 0.75, 1]
+    n_episodes = 1_000
+    # betas = [50, 100, 150, 200]
 
-    N = 1_000
+    # betas = [1, 5, 10, 20, 50, 100, 150, 200]
+    # sigmas = [0.25, 0.5, 0.75, 1]
+
+    betas = [5, 10, 20]
+    sigmas = [0.25, 0.5, 0.75]
+
+    N = 1_00
 
     env = ModifiedFrozenLake(map_name='7x7holes')
     # env = ModifiedFrozenLake(map_name='9x9zigzag')
@@ -396,7 +402,12 @@ def make_figure_new():
     nA = nSnA // nS
     prior_policy = np.ones((nS, nA)) / nA
 
+    runs = []
     for beta in betas:
+
+        gt_eigenvalue = solve_unconstrained_v1(beta, dynamics, rewards, prior_policy)[0]
+        gt_theta = -np.log(gt_eigenvalue) / beta
+
         for sigma in sigmas:
             def work(replica, rng):
                 show_prg = replica == 1
@@ -489,9 +500,6 @@ def make_figure_new():
                             alpha = alpha * 0.55
                             l_alpha = l_alpha * 0.55
 
-                            # alpha = alpha * 0.25
-                            # l_alpha = l_alpha * 0.25
-
                         state, action = next_state, next_action
 
                     l += 1
@@ -509,29 +517,60 @@ def make_figure_new():
             rngs = [default_rng(s) for s in SeedSequence().spawn(n_replicas)]
             data = Parallel(n_jobs=n_replicas)(delayed(work)(i + 1, rng) for i, rng in enumerate(rngs))
 
-        ax = plt.subplot2grid((1, 2), (0, 0))
-        gt_eigenvalue = solve_unconstrained_v1(beta, dynamics, rewards, prior_policy)[0]
-        gt_theta = -np.log(gt_eigenvalue) / beta
-        x, y = [], []
-        for d in data:
-            x.append(d['step_list'])
-            y.append(d['theta_list'])
-        x = np.array(x).mean(axis=0)
-        y = np.array(y)
-        e = np.abs(y - gt_theta)[:, -1].max()
-        y, dy = y.mean(axis=0), y.std(axis=0)
-        ax.plot(x, y)
-        ax.fill_between(x, y - dy, y + dy, alpha=0.4)
-        ax.hlines(gt_theta, x[0], x[-1], linestyles='dashed', color='black', label=r'Target $\\theta$')
-        ax.set_xlabel('Training step')
-        ax.set_ylim(gt_theta - e * 10, gt_theta + e * 10)
-        ax.set_ylabel("Learned $\\theta$ value\n(mean over replicas)")
+            y = []
+            for d in data:
+                y.append(d['theta_list'])
+            y = np.array(y)
+            y = y.mean(axis=0)
 
-        print(f"True theta:  {gt_theta}")
-        print(f"Theta error: {e}  (max over {n_replicas} replicas)")
-        print(f"Theta relative error: {e / gt_theta * 100:.4f}%  (max over {n_replicas} replicas)")
-        plt.tight_layout()
-        plt.show()
+            mse = 0
+            for i in range(len(y)):
+                mse += (y[i] - gt_theta) ** 2
+            rmse = sqrt(mse)
+
+            runs.append({
+                "sigma":sigma,
+                "beta":beta,
+                "rmse": rmse
+            })
+
+    s, b,  rms = [], [], []
+    for item in runs:
+        s.append(item.get('sigma'))
+        b.append(item.get('beta'))
+        rms.append(item.get('rmse'))
+    print(s, b, rms)
+
+    plt.figure(figsize=(12, 4))
+
+    ax = plt.subplot2grid((1, 2), (0, 0))
+    ax.scatter(rms, s, color='tab:blue', marker='o', label='Sigma')
+    ax.set_xlabel('RMSE')
+    ax.set_ylabel("Sigma")
+    ax.legend()
+
+    ax = plt.subplot2grid((1, 2), (0, 1))
+    ax.scatter(rms, b, color='tab:red', marker='x', label='Sigma')
+    ax.set_xlabel('RMSE')
+    ax.set_ylabel("Beta")
+
+    # # Create figure and axis
+    # fig, ax1 = plt.subplots()
+    # # Plot theta values
+    # ax1.set_xlabel('RMSE')
+    # ax1.set_ylabel('Sigma', color='tab:blue')
+    # ax1.scatter(rms, s, color='tab:blue', marker='o', label='Sigma')
+    # ax1.tick_params(axis='y', labelcolor='tab:blue')
+    # # Create a second y-axis
+    # ax2 = ax1.twinx()
+    # ax2.set_ylabel('Beta', color='tab:red')
+    # ax2.scatter(rms, b, color='tab:red', marker='x', label='Beta')
+    # ax2.tick_params(axis='y', labelcolor='tab:red')
+    # Show legend
+    # fig.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 
 
@@ -558,7 +597,9 @@ if __name__ == '__main__':
     # soft_q_learning_figure_5(beta=10, max_steps=300)
 
     # print('\nMaking figure 8 (faster version). This should take about 1 minute ... ')
-    make_figure_8_with_k_learning(beta=10, n_replicas=2, n_episodes=1_00)
+    # make_figure_8_with_k_learning(beta=10, n_replicas=2, n_episodes=1_00)
 
     # # print('\nMaking figure 8 (fast version). This should take about 10 minutes ... ')
     # make_figure_8_with_k_learning(beta = 10, n_replicas = 2, n_episodes = 10_000)
+
+    make_figure_new()
