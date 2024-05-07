@@ -62,9 +62,10 @@ class SoftQLearning:
             if type(state) is tuple:
                 state, _ = state 
             done = False
+            truncated = False
             episode_reward = 0
             
-            while not done:
+            while not done and not truncated:
                 action = self.choose_action(state)
                 state_action_distribution[state, action] += 1
                 next_state, reward, done, truncated, info = env.step(action)
@@ -88,7 +89,6 @@ def soft_q_learning(env, beta=100, num_episodes=100, eval= False):
 
     # Training Agent
     agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
-    num_episodes = 1000
     agent.train(num_episodes, env)
 
     # Evaluation
