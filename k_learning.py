@@ -38,12 +38,15 @@ class KLearning:
         self.k_table[state, action] += self.alpha * (k_target - k_current)
 
     def train(self, num_episodes, env):
-        for episode in range(1, num_episodes + 1):
+        for episode in range(num_episodes):
             self.q_table_at_each_t = np.zeros((num_episodes, self.num_states, self.num_actions))
             beta_l = self.beta * np.sqrt(episode)
-            state, info = env.reset()
+            state = env.reset()
+            if type(state) == tuple:
+                state, info = state
+            truncated = False
             done = False
-            while not done:
+            while not done and not truncated:
                 action = self.choose_action(state)
                 self.visitation_count[state, action] += 1 
                 next_state, reward, done, truncated, info = env.step(action)
@@ -55,11 +58,14 @@ class KLearning:
         total_rewards = []
         state_distribution = np.zeros((self.num_states))
         for episode in range(1, num_episodes + 1):
-            state, info = env.reset()
+            state = env.reset()
+            if type(state) == tuple:
+                state, info = state
             done = False
+            truncated = False
             episode_reward = 0
             state_distribution[state] += 1
-            while not done:
+            while not done and not truncated:
                 action = np.argmax(self.k_table[state])
                 next_state, reward, done, truncated, info = env.step(action)
                 episode_reward += reward
