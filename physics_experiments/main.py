@@ -177,7 +177,6 @@ def make_figure_2():
     x[np.isnan(x)] = 0.
 
     Dkl_t = x.sum(axis=1)
-    fig = plt.figure(figsize=(5, 2), dpi=150)
     fig.subplots_adjust(bottom=0.2, left=0.07, right=0.99, top=0.95)
     plt.plot(Dkl_t, label=r'$D_{kl}(t)$')
     plt.hlines(0., 0 - 5, N + 5, 'k', '--')
