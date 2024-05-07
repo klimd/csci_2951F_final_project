@@ -9,7 +9,6 @@ class SoftQLearning:
         self.gamma = gamma
         self.beta = beta
         self.q_table = np.zeros((num_states, num_actions))
-        self.q_table_at_each_t = np.zeros((1000000, num_states, num_actions))
         self.t_final = 0
 
     def softmax(self, q_values):
@@ -22,55 +21,69 @@ class SoftQLearning:
         action = np.random.choice(self.num_actions, p=action_probs)
         return action
 
-    def update_q_table(self, state, action, reward, next_state, t):
+    def update_q_table(self, state, action, reward, next_state):
         q_current = self.q_table[state, action]
         q_next = self.q_table[next_state]
         v_next = np.log(np.sum(np.exp(q_next * self.beta))) / self.beta
         q_target = reward + self.gamma * v_next # TODO possibly change reward to mean reward
         self.q_table[state, action] += self.alpha * (q_target - q_current)
-        self.q_table_at_each_t[t] = self.q_table[state, action]
+       
 
-    def train(self, num_episodes, env):
-        t = 0
+    def train(self, num_episodes, env, eval = False):
+        self.q_table_at_each_t = np.zeros((num_episodes, self.num_states, self.num_actions))
+        self.state_action_dist_t = np.zeros((num_episodes, self.num_states, self.num_actions))
         for episode in range(num_episodes):
-            state, info = env.reset()
+            state = env.reset()
+            if type(state) is tuple:
+                state, _ = state 
             done = False
-            while not done:
-                action = self.choose_action(state)
+            truncated = False
+            while not done and not truncated:
+                action = np.random.choice(self.num_actions, p=np.exp(self.q_table[state] / self.beta) / np.sum(np.exp(self.q_table[state] / self.beta)))
                 next_state, reward, done, truncated, info = env.step(action)
-                self.update_q_table(state, action, reward, next_state, t)
+                best_next_action = np.argmax(Q[next_state])
+                td_target = reward + self.gamma * self.q_table[next_state][best_next_action]
+                td_error = td_target - Q[state][action]
+                self.q_table[state][action] += self.alpha * td_error
                 state = next_state
-                t+=1
-        self.t_final = t
+                self.q_table_at_each_t[episode] = self.q_table
+            if eval:
+                self.evaluate(env, 100)
+                self.state_action_dist_t[episode] = self.state_action_distribution
+
+
+
 
     def evaluate(self, env, num_episodes):
         total_rewards = []
-        state_distribution = np.zeros((self.num_states))
+        state_action_distribution = np.zeros((self.num_states, self.num_actions))
         for episode in range(num_episodes):
-            state, info = env.reset()
+            state = env.reset()
+            if type(state) is tuple:
+                state, _ = state 
             done = False
             episode_reward = 0
-            state_distribution[state] += 1
+            
             while not done:
                 action = self.choose_action(state)
+                state_action_distribution[state, action] += 1
                 next_state, reward, done, truncated, info = env.step(action)
                 episode_reward += reward
                 state = next_state
-                state_distribution[state] += 1
             total_rewards.append(episode_reward)
         # print(state_distribution)
-        self.state_distribution = state_distribution
+        self.state_action_distribution = state_action_distribution
         return np.mean(total_rewards)
     
 # if __name__ == '__main__':
-def soft_q_learning(env, beta=100):
+def soft_q_learning(env, beta=100, num_episodes=100, eval= False):
     # env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
     num_states = env.observation_space.n
     num_actions = env.action_space.n
     alpha = 0.1
-    gamma = 0.99
+    gamma = 1
     beta = beta
 
     # Training Agent

@@ -19,7 +19,7 @@ class KLearning:
     def choose_action(self, state):
         k_values = self.k_table[state]
         action_probs = self.softmax(k_values)
-        action = np.random.choice(self.num_actions, p=action_probs)
+        action =  np.random.choice(self.num_actions, p=action_probs)
         return action
     
     def calculate_tau(self, beta_l, s, a):
@@ -39,6 +39,7 @@ class KLearning:
 
     def train(self, num_episodes, env):
         for episode in range(1, num_episodes + 1):
+            self.q_table_at_each_t = np.zeros((num_episodes, self.num_states, self.num_actions))
             beta_l = self.beta * np.sqrt(episode)
             state, info = env.reset()
             done = False
@@ -48,6 +49,7 @@ class KLearning:
                 next_state, reward, done, truncated, info = env.step(action)
                 self.update_k_table(beta_l, state, action, reward, next_state, done)
                 state = next_state
+            self.q_table_at_each_t[episode] = self.k_table
 
     def evaluate(self, env, num_episodes):
         total_rewards = []
@@ -67,7 +69,7 @@ class KLearning:
         self.state_distribution = state_distribution
         return np.mean(total_rewards)
 
-def k_learning(env, beta=100):
+def k_learning(env, beta=100, num_episodes=100):
     # if __name__ == '__main__':
 #     env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
@@ -81,7 +83,6 @@ def k_learning(env, beta=100):
 
     # Training Agent
     agent = KLearning(num_states, num_actions, alpha, gamma, beta, sigma)
-    num_episodes = 100
     agent.train(num_episodes, env)
 
     # Evaluation
