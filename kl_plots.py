@@ -6,26 +6,28 @@ from physics_experiments.frozen_lake_env import ModifiedFrozenLake
 def soft_q_learning(env, episodes, learning_rate, beta, discount_factor):
     nS = env.observation_space.n
     nA = env.action_space.n
-    Q = np.zeros((nS, nA))
+    Q = np.full((nS, nA), -5)
     distributions = np.zeros((episodes, nS, nA))  # To store distributions after each episode
-
+    q_table_at_each_t = np.zeros((episodes, nS, nA))
     for episode in range(episodes):
         state = env.reset()
         done = False
         truncated = False
         while not done and not truncated:
-            action = np.random.choice(nA, p=np.exp(Q[state] / beta) / np.sum(np.exp(Q[state] / beta)))
+            action = np.random.choice(nA) # p=np.exp(Q[state] / beta) / np.sum(np.exp(Q[state] / beta))
             next_state, reward, done, truncated, info = env.step(action)
-            best_next_action = np.argmax(Q[next_state])
-            td_target = reward + discount_factor * Q[next_state][best_next_action]
+            delta = (Q[next_state].min() + Q[next_state].max()) / 2
+            td_target = reward + discount_factor * (delta + np.log(np.sum(np.exp(beta * (Q[next_state] - delta)) / nA)) / beta)
+            if done:
+                td_target = reward
             td_error = td_target - Q[state][action]
             Q[state][action] += learning_rate * td_error
             state = next_state
-
+        q_table_at_each_t[episode] = Q
         # Compute distribution after the episode
         distributions[episode] = compute_state_distribution(env, Q, beta)
 
-    return Q, distributions
+    return Q, distributions, q_table_at_each_t
 
 def compute_state_distribution(env, Q, beta, num_simulations=100):
     state_count = np.zeros((env.observation_space.n, env.action_space.n))
@@ -51,10 +53,15 @@ env = TimeLimit(env, 250)
 learning_rate = 0.1
 beta = 20
 discount_factor = 1
-episodes = 5000
+episodes = 300
 
 # Train using soft Q-learning and save distributions
-Q, distributions = soft_q_learning(env, episodes, learning_rate, beta, discount_factor)
+Q, distributions, q_table_at_each_t = soft_q_learning(env, episodes, learning_rate, beta, discount_factor)
+
+np.save('q_tables1.npy', q_table_at_each_t)
+np.save('distributions1.npy', distributions)
+
+
 
 # Example usage: print distributions for the first and last episodes
 print("Distribution after the first episode:", distributions[0])
