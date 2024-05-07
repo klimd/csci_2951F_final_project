@@ -51,16 +51,20 @@ class KLearning:
 
     def evaluate(self, env, num_episodes):
         total_rewards = []
+        state_distribution = np.zeros((self.num_states))
         for episode in range(1, num_episodes + 1):
             state, info = env.reset()
             done = False
             episode_reward = 0
+            state_distribution[state] += 1
             while not done:
                 action = np.argmax(self.k_table[state])
                 next_state, reward, done, truncated, info = env.step(action)
                 episode_reward += reward
                 state = next_state
+                state_distribution[state] += 1
             total_rewards.append(episode_reward)
+        self.state_distribution = state_distribution
         return np.mean(total_rewards)
 
 def k_learning(env, beta=100):
@@ -73,7 +77,7 @@ def k_learning(env, beta=100):
     alpha = 0.1
     gamma = 0.99
     beta = beta
-    sigma = 10
+    sigma = 0.05
 
     # Training Agent
     agent = KLearning(num_states, num_actions, alpha, gamma, beta, sigma)
@@ -84,12 +88,12 @@ def k_learning(env, beta=100):
     num_eval_episodes = 100
     avg_reward = agent.evaluate(env, num_eval_episodes)
     print(f"Average reward over {num_eval_episodes} episodes: {avg_reward:.2f}")
-    state, info = env.reset()
-    done = False
-    while not done:
-        action = np.argmax(agent.k_table[state])
-        next_state, reward, done, truncated, info = env.step(action)
-        # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
-        state = next_state
+    # state, info = env.reset()
+    # done = False
+    # while not done:
+    #     action = np.argmax(agent.k_table[state])
+    #     next_state, reward, done, truncated, info = env.step(action)
+    #     # print(f"State: {state}, Action: {action}, Next State: {next_state}, Reward: {reward}, Done: {done}")
+    #     state = next_state
 
     return agent

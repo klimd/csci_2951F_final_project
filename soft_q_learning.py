@@ -75,7 +75,7 @@ def soft_q_learning(env, beta=100):
 
     # Training Agent
     agent = SoftQLearning(num_states, num_actions, alpha, gamma, beta)
-    num_episodes = 100
+    num_episodes = 1000
     agent.train(num_episodes, env)
 
     # Evaluation
