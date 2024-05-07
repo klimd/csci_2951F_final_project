@@ -60,8 +60,8 @@ episodes = 300
 # Train using soft Q-learning and save distributions
 Q, distributions, q_table_at_each_t = soft_q_learning(env, episodes, learning_rate, beta, discount_factor)
 
-np.save('q_tables1.npy', q_table_at_each_t)
-np.save('distributions1.npy', distributions)
+np.save('q_tables.npy', q_table_at_each_t)
+np.save('distributions.npy', distributions)
 
 
 
