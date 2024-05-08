@@ -25,7 +25,7 @@ class SoftQLearning:
         q_current = self.q_table[state, action]
         q_next = self.q_table[next_state]
         v_next = np.log(np.sum(np.exp(q_next * self.beta))) / self.beta
-        q_target = reward + self.gamma * v_next # TODO possibly change reward to mean reward
+        q_target = reward + self.gamma * v_next 
         self.q_table[state, action] += self.alpha * (q_target - q_current)
        
 
@@ -43,6 +43,8 @@ class SoftQLearning:
                 next_state, reward, done, truncated, info = env.step(action)
                 best_next_action = np.argmax(self.q_table[next_state])
                 td_target = reward + self.gamma * self.q_table[next_state][best_next_action]
+                if done:
+                    td_target = reward
                 td_error = td_target - self.q_table[state][action]
                 self.q_table[state][action] += self.alpha * td_error
                 state = next_state
@@ -72,13 +74,11 @@ class SoftQLearning:
                 episode_reward += reward
                 state = next_state
             total_rewards.append(episode_reward)
-        # print(state_distribution)
         self.state_action_distribution = state_action_distribution
         return np.mean(total_rewards)
     
 # if __name__ == '__main__':
 def soft_q_learning(env, beta=100, num_episodes=100, eval= False):
-    # env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
 
     # Some Hyperparameters
     num_states = env.observation_space.n

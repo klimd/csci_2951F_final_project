@@ -41,7 +41,7 @@ MAPS = {
     ]
 }
 
-def make_figure_2_soft_q(n = 250):
+def make_figure_2_from_file(file, n = 250):
     N = n
     env = ModifiedFrozenLake(map_name='9x9zigzag', min_reward=-2.)
     env = TimeLimit(env, N)
@@ -74,12 +74,7 @@ def make_figure_2_soft_q(n = 250):
             for j in range(4):
                 excluded_wall_indices.append(i * 4 + j)
 
-    # env = gym.make('FrozenLake-v1', desc=desc, is_slippery=True)
-
-    # agent = soft_q_learning(env, beta=beta, num_episodes=N, eval=True)
-    dist_in_time = np.load('distributions.npy')#agent.state_action_dist_t
-    q_in_time = np.load('q_tables.npy')#agent.state_action_dist_t
-    #dist_in_time = np.exp(dist_in_time / beta)
+    dist_in_time = np.load(file)
     dist_in_time /= dist_in_time.sum(axis=(1, 2), keepdims=True)
     dist_in_time = dist_in_time.reshape(N, -1)
 
@@ -156,7 +151,6 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
 
     data = []
     for beta in [2, 20, 40, 200]:
-    # for beta in [200, 150, 100, 50]:
         print(f"beta={beta}", end=', ', flush=True)
 
         agent = soft_q_learning(env, beta=beta)
@@ -167,8 +161,6 @@ def soft_q_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_
             distribution=dist,
         )
         data.append(row)
-
-    dst_params = [(r['beta'], r['distribution']) for i, r in enumerate(data)]
 
     title_list = []
     dist_list = []
@@ -183,10 +175,6 @@ def k_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_000, 
 
     data = []
     for beta in [2, 50, 100, 150]:
-    # for beta in [20, 100, 250, 400]:
-    # for beta in [0.5, 1, 1.5, 2]:
-    # for beta in [0.5, 0.05, 0.025, 0.005 ]:
-    # for beta in [50, 100, 200]:
         print(f"beta={beta}", end=', ', flush=True)
 
         agent = k_learning(env, beta=beta)
@@ -210,7 +198,7 @@ def k_learning_figure_3(env, max_beta=200, step=0.95, trajectory_length=10_000, 
 
     plot_dist(env.desc, *dist_list, titles=title_list)
 
-def soft_q_learning_figure_5(beta=200, max_steps=300):
+def make_figure_5_from_file(file, beta=200, max_steps=300):
 
     new_desc = [  # 9x9zigzag
         "FFFFFFFFF",
@@ -226,8 +214,7 @@ def soft_q_learning_figure_5(beta=200, max_steps=300):
 
     
     N = max_steps
-    # new_env = gym.make('FrozenLake-v1', desc=new_desc, is_slippery=True)
-    # new_env._max_episode_steps = N
+
     env = ModifiedFrozenLake(map_name='9x9zigzag', min_reward=-2)
     env = TimeLimit(env, N)
     # We want to exclude values that are in a wall by masking them out because they are just our initial values
@@ -237,16 +224,10 @@ def soft_q_learning_figure_5(beta=200, max_steps=300):
             for j in range(4):
                 excluded_wall_indices.append(i * 4 + j)
 
-    # agent = k_learning(env, beta, N) #soft_q_learning(env=env, beta=beta, num_episodes=max_steps)
-    # print(agent.q_table_at_each_t.shape)
-    #q_table_t = agent.q_table_at_each_t[:agent.t_final, :, :]
-    # q_table_t = agent.q_table_at_each_t[:N, :, :]
-    q_table_t = np.load('q_tables.npy')
-    # q_table_t = q_table_t.reshape(N, agent.num_states * agent.num_actions)
+    
+    q_table_t = np.load(file)
     q_table_t = q_table_t.reshape(max_steps, env.observation_space.n * env.action_space.n)
     print(q_table_t.shape)
-
-    #env = ModifiedFrozenLake(map_name='10x10empty', min_reward=-2.)
 
     dynamics, rewards = get_dynamics_and_rewards(env)
     nS, nSnA = dynamics.shape
@@ -255,12 +236,8 @@ def soft_q_learning_figure_5(beta=200, max_steps=300):
     solution = solve_unconstrained_v1(beta, dynamics, rewards, prior_policy)
     l, u, v, optimal_policy, optimal_dynamics, estimated_distribution = solution
 
-    # t = np.matrix(np.arange(agent.t_final)).T
     t = np.matrix(np.arange(N)).T
-    # here we create a q_table from eigenvalue and left-eigenvector, for each trajectory length
-    # this is to compare directly with the ground truth q_table from DP
-    #ld_q_table_t = (-l * t + np.log(u)) / beta
-    #ld_q_table_t[1:] /= t[1:]
+
     ld_q_table_t = np.full((1, nSnA), l) + np.log(u) / beta
     ld_q_table_t = np.asmatrix(np.full((N, nSnA), ld_q_table_t))
     
@@ -293,7 +270,6 @@ def soft_q_learning_figure_5(beta=200, max_steps=300):
 
     t = 20
     y = normalized_ldqtt[t].A.flatten()
-    # x = q_table_t[t].A.flatten()
     x = normalized_qtt[t].flatten()
     ax = fig.axes[2]
     ax.scatter(x, y, label=f'Q values for N = {t}')
@@ -304,13 +280,7 @@ def soft_q_learning_figure_5(beta=200, max_steps=300):
 
     t = N - 1 
     y = normalized_ldqtt[t].A.flatten()
-    # y = y - y.min()
-    # y = y / y.max()
-    # x = q_table_t[t].A.flatten()
     x = normalized_qtt[t].flatten()
-    # mn = x.min()
-    # x = x - mn
-    # x = x / x.max()
     ax = fig.axes[3]
     ax.scatter(x, y, label=f'Q values for N = {t + 1}')
     ax.plot([x.min(), x.max()], [x.min(), x.max()], 'k--')
@@ -673,85 +643,6 @@ def make_figure_new():
     plt.tight_layout()
     plt.show()
 
-def make_figure_5(beta=10, max_steps=300):
-    N = max_steps
-
-    # env = ModifiedFrozenLake(map_name='10x10empty', min_reward=-2.)
-    env = ModifiedFrozenLake(map_name='9x9zigzag', min_reward=-2.)
-    env = TimeLimit(env, N)
-
-    dynamics, rewards = get_dynamics_and_rewards(env)
-    nS, nSnA = dynamics.shape
-    nA = nSnA // nS
-    prior_policy = np.ones((nS, nA)) / nA
-
-    q_table_t = np.matrix(np.zeros((N + 1, nSnA)))
-    v_vectr_t = np.matrix(np.zeros((N + 1, nS)))
-
-    visitation_count = np.matrix(np.ones((env.nS * env.nA)))
-    sigma = 0.5
-    for steps_left in range(1, N + 1):
-        v_vectr_next = v_vectr_t[steps_left - 1].T
-        new_rewards = rewards + (sigma ** 2 * np.sqrt(steps_left)) / (2 * visitation_count)
-        q_table = (new_rewards + dynamics.multiply(v_vectr_next).sum(axis=0)).reshape((nS, nA))
-        visitation_count = q_table
-        # delta variable helps with numerical stability
-        delta = (q_table.min(axis=1) + q_table.max(axis=1)) / 2
-        v_vectr = delta + np.log(np.multiply(np.exp(beta * (q_table - delta)), prior_policy).sum(axis=1)) / beta
-
-        q_table_t[steps_left] = q_table.flatten()
-        v_vectr_t[steps_left] = v_vectr.flatten()
-
-    solution = solve_unconstrained_v1(beta, dynamics, rewards, prior_policy)
-    l, u, v, optimal_policy, optimal_dynamics, estimated_distribution = solution
-
-    t = np.matrix(np.arange(len(q_table_t))).T
-    q_table_t[1:] /= t[1:]
-
-    # here we create a q_table from eigenvalue and left-eigenvector, for each trajectory length
-    # this is to compare directly with the ground truth q_table from DP
-    ld_q_table_t = (np.log(l) * t + np.log(u)) / beta
-    print(ld_q_table_t)
-    print(ld_q_table_t.shape)
-    ld_q_table_t[1:] /= t[1:]
-
-    fig = plot_dist(env.desc, env.desc, None, None, None, show_plot=False, ncols=2)
-
-    s, d = 1, 10
-    y = np.sqrt(np.power(q_table_t - ld_q_table_t, 2).mean(axis=1)).A.flatten()[s::d]
-    x = t.A.flatten()[s::d]
-    ax = fig.axes[1]
-    ax.scatter(x, y)
-    ax.set_yscale('log')
-    ax.set_ylabel('Soft-Q values /N RMSE')
-    ax.set_xlabel('Episode Length (steps)')
-
-    t = 20
-    y = ld_q_table_t[t].A.flatten()
-    x = q_table_t[t].A.flatten()
-    ax = fig.axes[2]
-    ax.scatter(x, y, label=f'Q values for N = {t}')
-    ax.plot([x.min(), x.max()], [x.min(), x.max()], 'k--')
-    ax.set_xlabel('DP Soft-Q values / N')
-    ax.set_ylabel('Large Deviation Soft-Q values / N')
-    ax.legend()
-
-    t = 290
-    y = ld_q_table_t[t].A.flatten()
-    x = q_table_t[t].A.flatten()
-    ax = fig.axes[3]
-    ax.scatter(x, y, label=f'Q values for N = {t}')
-    ax.plot([x.min(), x.max()], [x.min(), x.max()], 'k--')
-    ax.set_xlabel('DP Soft-Q values / N')
-    ax.set_ylabel('Large Deviation Soft-Q values / N')
-    ax.legend()
-
-    plt.tight_layout()
-    plt.show()
-
-
-
-
 if __name__ == '__main__':
 
     desc = [    # 9x9zigzag
@@ -768,15 +659,16 @@ if __name__ == '__main__':
     # desc = ["SFF", "FFF", "HFG"]    #test-1
     env = gym.make('FrozenLake-v1', desc=desc, is_slippery=True)
 
-    # make_figure_3(max_beta = 2, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
-    # soft_q_learning_figure_3(env=env, max_beta = 200, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
-    # k_learning_figure_3(env=env, max_beta = 200, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
-    make_figure_2_soft_q(300)
-    soft_q_learning_figure_5(beta = 10, max_steps=300)
+    soft_q_learning_figure_3(env=env, max_beta = 200, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
+    k_learning_figure_3(env=env, max_beta = 200, step = 0.80, trajectory_length = 5_000, eig_max_it=10_000_000,  tolerance = 5e-4)
+    make_figure_2_from_file('distributions.npy', 300)
+    make_figure_5_from_file('q_tables.npy', beta = 10, max_steps=300)
+
+    make_figure_2_from_file('k_distributions.npy', 300)
+    make_figure_5_from_file('k_tables.npy', beta = 10, max_steps=300)
     
 
     # # print('\nMaking figure 8 (fast version). This should take about 10 minutes ... ')
     # make_figure_8_with_k_learning(beta = 10, n_replicas = 2, n_episodes = 10_000)
 
     # make_figure_new()
-    make_figure_5()

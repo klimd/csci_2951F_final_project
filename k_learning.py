@@ -34,7 +34,7 @@ class KLearning:
         if terminal:
             k_target = reward + tau
         else:
-            k_target = reward + tau + self.gamma * v_next # TODO possibly change reward to mean reward
+            k_target = reward + tau + self.gamma * v_next
         self.k_table[state, action] += self.alpha * (k_target - k_current)
 
     def train(self, num_episodes, env):
@@ -76,9 +76,6 @@ class KLearning:
         return np.mean(total_rewards)
 
 def k_learning(env, beta=100, num_episodes=100):
-    # if __name__ == '__main__':
-#     env = gym.make('FrozenLake-v1', desc=["SFF", "FFF", "HFG"], is_slippery=True)
-
     # Hyperparameters
     num_states = env.observation_space.n
     num_actions = env.action_space.n
